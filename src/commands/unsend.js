@@ -5,8 +5,6 @@
  * الاستخدام:
  * !unsend
  *
- * يجب الرد على رسالة أرسلها البوت.
- *
  * Developer: Magnus
  */
 
@@ -21,10 +19,13 @@ module.exports = {
     countDown: 2,
     role: 0,
     category: "utility",
-    description: "حذف رسالة البوت بالرد عليها",
+
+    description:
+      "حذف رسالة البوت عن طريق الرد عليها",
 
     guide: {
-      en: "{pn} — الرد على رسالة البوت"
+      en:
+        "{pn} — قم بالرد على رسالة البوت"
     }
   },
 
@@ -34,42 +35,47 @@ module.exports = {
     message
   }) {
 
-    // ── التأكد من وجود رد ─────────────────────────────
+    // ── يجب أن يكون الأمر رداً على رسالة ─────────────
     if (!event.messageReply) {
       return message.reply(
-        "⚠️ لازم ترد على رسالة البوت أولاً."
+        "⚠️ قم بالرد على رسالة البوت أولاً ثم اكتب:\n\n" +
+        "unsend"
       );
     }
 
-    const reply = event.messageReply;
+    const repliedMessage =
+      event.messageReply;
 
-    // ── التأكد من وجود ID الرسالة ─────────────────────
-    if (!reply.messageID) {
+    // ── التأكد من وجود Message ID ────────────────────
+    if (!repliedMessage.messageID) {
       return message.reply(
         "❌ لم أستطع تحديد الرسالة."
       );
     }
 
-    // ── التأكد أن الرسالة من البوت ────────────────────
-    const botID = api.getCurrentUserID();
+    // ── ID البوت الحالي ───────────────────────────────
+    const botID =
+      api.getCurrentUserID();
 
+    // ── السماح بحذف رسائل البوت فقط ──────────────────
     if (
-      reply.senderID &&
-      reply.senderID !== botID
+      repliedMessage.senderID &&
+      repliedMessage.senderID !== botID
     ) {
       return message.reply(
-        "❌ هذه ليست رسالة أرسلها البوت."
+        "❌ لا يمكنك حذف رسائل الأعضاء.\n" +
+        "يمكنني حذف رسائل البوت فقط."
       );
     }
 
     try {
 
-      // حذف الرسالة المردود عليها
+      // ── حذف الرسالة المردود عليها ─────────────────
       await api.unsendMessage(
-        reply.messageID
+        repliedMessage.messageID
       );
 
-      // حذف رسالة الأمر نفسها
+      // ── حذف أمر unsend نفسه ───────────────────────
       try {
         await api.unsendMessage(
           event.messageID
@@ -79,12 +85,13 @@ module.exports = {
     } catch (error) {
 
       console.error(
-        "[UNSEND ERROR]",
+        "[DAVID UNSEND ERROR]",
         error
       );
 
       return message.reply(
-        "❌ فشل حذف الرسالة."
+        "❌ تعذر حذف الرسالة.\n" +
+        "ربما الرسالة قديمة أو لم يعد بالإمكان حذفها."
       );
     }
   }
