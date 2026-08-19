@@ -1,6 +1,7 @@
 /**
  * SAIYAN — /uptime
  * Copyright © 2026 Magnus
+ *
  * عرض مدة تشغيل البوت وإحصائيات النظام
  */
 
@@ -34,90 +35,117 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function getStartTime() {
+  if (!global._saiyanStartTime) {
+    global._saiyanStartTime = Date.now() - process.uptime() * 1000;
+  }
+
+  return global._saiyanStartTime;
+}
+
 module.exports = {
   config: {
     name: "uptime",
-    aliases: ["up", "تشغيل", "مدة"],
-    version: "5.0",
+    aliases: ["up", "تشغيل", "وقت", "مدة"],
+    version: "2.0",
     author: "Magnus",
     countDown: 3,
     role: 0,
-    category: "info",
-
+    category: "system",
     description: "عرض مدة تشغيل Saiyan وإحصائيات النظام",
-
     guide: {
-      en: "{pn} — عرض مدة تشغيل البوت وإحصائياته"
+      en: "{pn} — عرض مدة تشغيل البوت\n{pn} status — عرض معلومات النظام"
     }
   },
 
-  onStart: async function ({ message }) {
-    try {
-      const uptime = process.uptime() * 1000;
+  onStart: async function ({ message, args }) {
+    const startTime = getStartTime();
 
-      const memory = process.memoryUsage();
-      const usedMemory = formatBytes(memory.rss);
-      const heapUsed = formatBytes(memory.heapUsed);
-      const heapTotal = formatBytes(memory.heapTotal);
+    const uptimeMs = Date.now() - startTime;
+    const uptime = formatDuration(uptimeMs);
 
-      const cpu = os.cpus();
-      const cpuModel = cpu?.[0]?.model || "غير معروف";
+    const memory = process.memoryUsage();
+    const usedMemory = formatBytes(memory.rss);
+    const heapUsed = formatBytes(memory.heapUsed);
+    const heapTotal = formatBytes(memory.heapTotal);
 
-      const platform = `${os.type()} ${os.release()}`;
+    const cpu = os.cpus()?.[0]?.model || "غير معروف";
+    const platform = `${os.type()} ${os.release()}`;
+    const node = process.version;
 
-      const botName =
-        global.GoatBot?.config?.name ||
-        "Saiyan";
+    const botName = "Saiyan";
+    const developer = "Magnus";
 
-      const now = new Date();
+    const startDate = new Date(startTime);
 
-      const text =
-`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ⚡ S A I Y A N  •  U P T I M E
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const pad = n => String(n).padStart(2, "0");
 
-  🤖 البوت       : ${botName}
+    const startFormatted =
+      `${startDate.getFullYear()}-` +
+      `${pad(startDate.getMonth() + 1)}-` +
+      `${pad(startDate.getDate())} ` +
+      `${pad(startDate.getHours())}:` +
+      `${pad(startDate.getMinutes())}:` +
+      `${pad(startDate.getSeconds())}`;
 
-  ⏳ مدة التشغيل :
-     ${formatDuration(uptime)}
-
-  🟢 الحالة      : متصل ويعمل
-
-  💾 الذاكرة المستخدمة :
-     ${usedMemory}
-
-  🧠 Heap :
-     ${heapUsed} / ${heapTotal}
-
-  📱 النظام      :
-     ${platform}
-
-  ⚙️ المعالج     :
-     ${cpuModel}
-
-  🕐 الوقت       :
-     ${now.toLocaleString("ar-LY")}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  👑 المطور : Magnus
-  ⚡ Saiyan Messenger Bot
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-      return message.reply(text);
-
-    } catch (error) {
-      console.error("UPTIME ERROR:", error);
-
+    if ((args[0] || "").toLowerCase() === "status") {
       return message.reply(
-`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ❌ حدث خطأ أثناء قراءة حالة Saiyan
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ⚡ S A I Y A N
+        SYSTEM STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  السبب:
-  ${String(error.message || error).slice(0, 150)}
+🟢 الحالة        : يعمل بشكل طبيعي
+⏱️ مدة التشغيل    : ${uptime}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+🚀 بدء التشغيل   : ${startFormatted}
+
+💾 الذاكرة
+├─ RSS           : ${usedMemory}
+├─ Heap مستخدم   : ${heapUsed}
+└─ Heap الكلي    : ${heapTotal}
+
+🧩 النظام
+├─ Node.js       : ${node}
+├─ Platform      : ${platform}
+└─ CPU           : ${cpu.slice(0, 42)}
+
+🤖 البوت         : ${botName}
+👑 المطور        : ${developer}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
       );
     }
+
+    return message.reply(
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ⚡ S A I Y A N
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🟢 الحالة       : متصل ويعمل
+
+⏱️ مدة التشغيل
+   ${uptime}
+
+🚀 بدأ التشغيل
+   ${startFormatted}
+
+💾 استخدام الذاكرة
+   ${usedMemory}
+
+📡 Node.js
+   ${node}
+
+🤖 النظام
+   Saiyan Messenger Bot
+
+👑 المطور
+   Magnus
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 ${global.GoatBot?.config?.prefix || "/"}uptime status
+   لعرض معلومات النظام الكاملة
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+    );
   }
 };
